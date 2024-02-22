@@ -1,0 +1,14 @@
+1. Instalacja R i Rstudio
+
+https://posit.co/download/rstudio-desktop/
+
+
+
+2. Zainstaluj w R
+
+if (!require("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("Rsubread")
+BiocManager::install("edgeR")
+BiocManager::install("limma")
