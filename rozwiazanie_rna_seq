@@ -1,0 +1,68 @@
+library(Rsubread)
+
+setwd("C:/Users/Adrian/Desktop/warsztatyRNAseq")
+seqdata <- read.delim("data/GSE60450_Lactation-GenewiseCounts.txt", stringsAsFactors = FALSE)
+head(seqdata)
+
+#####2
+countdata <- seqdata[,-(1:2)]
+rownames(countdata) <- seqdata[,1]
+head(countdata)
+
+#####3
+colnames(countdata) <- substr(colnames(countdata), 1, 7)
+dim(countdata)
+
+####4 i 5
+library(edgeR)
+myCPM <- cpm(countdata)
+thresh <- myCPM > 0.5
+keep <- rowSums(thresh) >= 2
+counts.keep <- countdata[keep,]
+dim(counts.keep)
+
+
+####6 
+plot(myCPM[,1],countdata[,1],ylim=c(0,50),xlim=c(0,3))
+abline(v=0.5)
+
+####7
+dgeObj <- DGEList(counts.keep)
+
+
+####8
+plotMDS(dgeObj)
+
+
+###9
+dgeObj <- calcNormFactors(dgeObj)
+
+###10
+plotMD(dgeObj,column = 7)
+abline(h=0,col="grey")
+
+
+###11
+sampleinfo <- read.delim("data/SampleInfo_Corrected.txt")
+group <- paste(sampleinfo$CellType,sampleinfo$Status,sep=".")
+group <- as.character(group)
+type <- sapply(strsplit(group, ".", fixed=T), function(x) x[1])
+status <- sapply(strsplit(group, ".", fixed=T), function(x) x[2])
+# Specify a design matrix with an intercept term
+design <- model.matrix(~ type + status)
+design
+
+###12
+dgeObj <- estimateCommonDisp(dgeObj)
+dgeObj <- estimateGLMTrendedDisp(dgeObj)
+dgeObj <- estimateTagwiseDisp(dgeObj)
+plotBCV(dgeObj)
+
+###13
+fit <- glmFit(dgeObj, design)
+head(coef(fit))
+
+#luminal - virign
+PvsV <- makeContrasts(typeluminal-statusvirgin, levels=design)
+lrt.pVsV <- glmLRT(fit, contrast=PvsV)
+topTags(lrt.pVsV)
